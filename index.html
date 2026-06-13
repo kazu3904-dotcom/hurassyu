@@ -1,0 +1,1259 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>フラッシュカードメーカー</title>
+  <style>
+    :root {
+      --bg: #f7f4ee;
+      --panel: #fffdf8;
+      --ink: #1f2933;
+      --muted: #667085;
+      --line: #ddd6ca;
+      --brand: #0f766e;
+      --brand-dark: #115e59;
+      --accent: #c2410c;
+      --card: #ffffff;
+      --shadow: 0 18px 50px rgba(43, 37, 30, .14);
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.72), rgba(255,255,255,.22)),
+        var(--bg);
+      color: var(--ink);
+      font-family: "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
+      letter-spacing: 0;
+    }
+
+    button, textarea, input, select {
+      font: inherit;
+      color: inherit;
+    }
+
+    button, select, input[type="text"] {
+      height: 40px;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: #fff;
+    }
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 0 13px;
+      cursor: pointer;
+      font-weight: 700;
+      white-space: nowrap;
+      transition: transform .12s ease, border-color .12s ease, background .12s ease;
+    }
+
+    button:hover { transform: translateY(-1px); border-color: #b8aa96; }
+    button:active { transform: translateY(0); }
+    button.primary { background: var(--brand); color: white; border-color: var(--brand); }
+    button.primary:hover { background: var(--brand-dark); }
+    button.warning { color: var(--accent); }
+    button.active { background: #d9f3ef; border-color: var(--brand); color: #0b4f49; }
+
+    select, input[type="text"] {
+      padding: 0 10px;
+      min-width: 86px;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,253,248,.88);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+
+    .title {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 190px;
+    }
+
+    .title strong { font-size: 18px; }
+    .title span { font-size: 12px; color: var(--muted); }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .main {
+      display: grid;
+      grid-template-columns: minmax(330px, 420px) 1fr;
+      gap: 18px;
+      padding: 18px;
+      min-height: 0;
+    }
+
+    .editor {
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 12px;
+      min-height: 0;
+    }
+
+    .section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 12px;
+    }
+
+    .section h2 {
+      margin: 0 0 9px;
+      font-size: 14px;
+    }
+
+    .samples, .save-row, .editor-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 240px;
+      height: 100%;
+      resize: vertical;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: #fff;
+      padding: 12px;
+      line-height: 1.55;
+      tab-size: 2;
+    }
+
+    .hint {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .stage {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 12px;
+    }
+
+    .status {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      min-height: 40px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .timer-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .timer-controls label {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--ink);
+      font-size: 13px;
+    }
+
+    .card-wrap {
+      position: relative;
+      min-height: 360px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+    }
+
+    .floating-display-controls {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      z-index: 4;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .floating-display-controls button {
+      min-width: 92px;
+      background: rgba(255, 255, 255, .56);
+      border-color: rgba(31, 41, 51, .16);
+      color: rgba(31, 41, 51, .72);
+      box-shadow: 0 8px 22px rgba(31, 41, 51, .08);
+      backdrop-filter: blur(10px);
+    }
+
+    .floating-display-controls button:hover {
+      background: rgba(255, 255, 255, .82);
+      color: var(--ink);
+    }
+
+    .floating-display-controls button.active {
+      background: rgba(217, 243, 239, .72);
+      border-color: rgba(15, 118, 110, .65);
+      color: #0b4f49;
+    }
+
+    .fullscreen-controls {
+      display: none;
+    }
+
+    .flashcard {
+      width: 100%;
+      min-height: min(calc(100vh - 190px), 720px);
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-rows: 1fr;
+      overflow: hidden;
+    }
+
+    .flashcard.double {
+      grid-template-rows: 1fr auto 1fr;
+    }
+
+    .face {
+      min-height: 160px;
+      display: grid;
+      place-items: center;
+      padding: clamp(20px, 4vw, 46px);
+      text-align: center;
+    }
+
+    .face.front { background: #fff7c7; }
+    .face.back { background: #f3fbfa; }
+
+    .label {
+      display: none;
+    }
+
+    .word {
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      font-size: clamp(34px, 7vw, 86px);
+      line-height: 1.14;
+      font-weight: 800;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--line);
+    }
+
+    .nav {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav .center {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .progress {
+      color: var(--muted);
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .fullscreen .topbar,
+    .fullscreen .editor,
+    .fullscreen .status {
+      display: none;
+    }
+
+    .fullscreen .main {
+      grid-template-columns: 1fr;
+      padding: 0;
+      min-height: 100vh;
+    }
+
+    .fullscreen .stage {
+      grid-template-rows: 1fr auto;
+      min-height: 100vh;
+      padding: 16px;
+      background: #1f2933;
+    }
+
+    .fullscreen .card-wrap {
+      padding: 0;
+      min-height: 0;
+    }
+
+    .fullscreen .fullscreen-controls {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      transform: none;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      max-width: none;
+      padding: 8px;
+      border: 1px solid rgba(31, 41, 51, .14);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, .54);
+      box-shadow: 0 10px 26px rgba(31, 41, 51, .10);
+      backdrop-filter: blur(12px);
+    }
+
+    .fullscreen .fullscreen-controls button,
+    .fullscreen .fullscreen-controls select {
+      height: 40px;
+      background: rgba(255, 255, 255, .64);
+    }
+
+    .fullscreen .fullscreen-controls button {
+      min-width: 88px;
+    }
+
+    .fullscreen .fullscreen-controls button.primary {
+      background: rgba(255, 255, 255, .78);
+      border-color: var(--brand);
+      color: var(--brand-dark);
+    }
+
+    .fullscreen .fullscreen-controls label {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 700;
+      color: rgba(31, 41, 51, .74);
+      white-space: nowrap;
+    }
+
+    .fullscreen .floating-display-controls {
+      top: 106px;
+      left: 10px;
+      right: 10px;
+      justify-content: center;
+    }
+
+    .fullscreen .floating-display-controls button {
+      flex: 1 1 104px;
+      max-width: 180px;
+      height: 42px;
+      background: rgba(255, 255, 255, .66);
+    }
+
+    .fullscreen .flashcard {
+      width: 100%;
+      min-height: calc(100vh - 96px);
+      border: 0;
+    }
+
+    .fullscreen .nav {
+      background: rgba(255,255,255,.96);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 8px;
+    }
+
+    @media (max-width: 880px) {
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .toolbar { justify-content: flex-start; }
+      .main { grid-template-columns: 1fr; }
+      .editor { grid-template-rows: auto auto auto auto; }
+      .flashcard { min-height: 430px; }
+      .nav { grid-template-columns: 1fr; }
+      .nav > button { width: 100%; }
+      button, select, input[type="text"] { min-height: 44px; }
+      .floating-display-controls {
+        left: 10px;
+        right: 10px;
+        justify-content: center;
+      }
+      .floating-display-controls button {
+        flex: 1 1 96px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .main { padding: 12px; }
+      .toolbar button, .toolbar select { flex: 1 1 calc(50% - 8px); }
+      .fullscreen .fullscreen-controls {
+        left: 10px;
+        right: 10px;
+        transform: none;
+        max-width: none;
+      }
+      .fullscreen .fullscreen-controls button {
+        flex: 1 1 calc(50% - 8px);
+      }
+      .fullscreen .fullscreen-controls label {
+        flex: 1 1 calc(50% - 8px);
+        justify-content: center;
+      }
+      .fullscreen .floating-display-controls {
+        top: 158px;
+      }
+      .word { font-size: clamp(30px, 12vw, 58px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <header class="topbar">
+      <div class="title">
+        <strong>フラッシュカードメーカー</strong>
+        <span>貼り付けた言葉から、すぐカードを作成</span>
+      </div>
+      <div class="toolbar" aria-label="メニュー">
+        <button id="shuffleBtn">ランダム</button>
+        <button id="frontOnlyBtn">表のみ</button>
+        <button id="backOnlyBtn">裏のみ</button>
+        <button id="bothBtn" class="active">表と裏</button>
+        <button id="autoBtn">自動</button>
+        <button id="manualBtn" class="active">手動</button>
+        <button id="fullscreenBtn" class="primary">全画面</button>
+      </div>
+    </header>
+
+    <main class="main">
+      <aside class="editor">
+        <section class="section">
+          <h2>見本</h2>
+          <div class="samples">
+            <button data-sample="prefectures">県名と県庁所在地</button>
+            <button data-sample="months">1月から12月の英語</button>
+            <button data-sample="weekdays">日曜から土曜の英語</button>
+            <button data-sample="stations">主要な駅名と県名</button>
+            <button data-sample="chemistry">化学式</button>
+            <button data-sample="japaneseMonths">和暦の月</button>
+            <button data-sample="musicSymbols">音楽記号</button>
+            <button data-sample="kobunWords">古文単語</button>
+            <button data-sample="yojijukugo">四字熟語</button>
+            <button data-sample="idioms">慣用句</button>
+            <button data-sample="proverbs">ことわざ</button>
+            <button data-sample="history">日本の歴史の年代と出来事</button>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2>保存モード</h2>
+          <div class="save-row">
+            <input id="deckName" type="text" placeholder="保存名">
+            <button id="saveBtn" class="primary">保存</button>
+            <select id="savedDecks" aria-label="保存したカード"></select>
+            <button id="loadBtn">読込</button>
+            <button id="deleteBtn" class="warning">削除</button>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2>カード入力</h2>
+          <textarea id="sourceText" spellcheck="false"></textarea>
+          <p class="hint">1行に「表,裏」または「表 タブ 裏」。スプレッドシートから2列を貼り付けても使えます。</p>
+        </section>
+
+        <section class="section">
+          <div class="editor-actions">
+            <button id="makeBtn" class="primary">カード作成</button>
+            <button id="clearBtn">入力を空にする</button>
+          </div>
+          <p class="hint" id="parseMessage"></p>
+        </section>
+      </aside>
+
+      <section class="stage">
+        <div class="status">
+          <span id="deckInfo">0枚</span>
+          <div class="timer-controls">
+            <label>表<select id="frontSeconds"></select>秒</label>
+            <label>裏<select id="backSeconds"></select>秒</label>
+          </div>
+        </div>
+
+        <div class="card-wrap">
+          <div class="fullscreen-controls" aria-label="全画面メニュー">
+            <button id="fsStartBtn" class="primary">スタート</button>
+            <button id="fsShuffleBtn">シャッフル</button>
+            <button id="fsAutoBtn">自動</button>
+            <button id="fsManualBtn" class="active">手動</button>
+            <label>表<select id="fsFrontSeconds"></select>秒</label>
+            <label>裏<select id="fsBackSeconds"></select>秒</label>
+          </div>
+          <div class="floating-display-controls" aria-label="表示切替">
+            <button id="flipBtn">表→裏</button>
+            <button id="floatFrontOnlyBtn">表のみ</button>
+            <button id="floatBackOnlyBtn">裏のみ</button>
+          </div>
+          <article class="flashcard" id="card">
+            <div class="face front" id="frontFace">
+              <div>
+                <div class="label">表</div>
+                <div class="word" id="frontWord">カードを作成してください</div>
+              </div>
+            </div>
+            <div class="divider" id="divider"></div>
+            <div class="face back" id="backFace">
+              <div>
+                <div class="label">裏</div>
+                <div class="word" id="backWord">左の見本から始められます</div>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <nav class="nav" aria-label="カード操作">
+          <button id="prevBtn">前へ</button>
+          <div>
+            <div class="progress" id="progress">0 / 0</div>
+            <div class="center">
+              <button id="restartBtn">最初から</button>
+            </div>
+          </div>
+          <button id="nextBtn">次へ</button>
+        </nav>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const samples = {
+      prefectures: `北海道,札幌市（さっぽろし）
+青森県,青森市（あおもりし）
+岩手県,盛岡市（もりおかし）
+宮城県,仙台市（せんだいし）
+秋田県,秋田市（あきたし）
+山形県,山形市（やまがたし）
+福島県,福島市（ふくしまし）
+茨城県,水戸市（みとし）
+栃木県,宇都宮市（うつのみやし）
+群馬県,前橋市（まえばしし）
+埼玉県,さいたま市（さいたまし）
+千葉県,千葉市（ちばし）
+東京都,新宿区（しんじゅくく）
+神奈川県,横浜市（よこはまし）
+新潟県,新潟市（にいがたし）
+富山県,富山市（とやまし）
+石川県,金沢市（かなざわし）
+福井県,福井市（ふくいし）
+山梨県,甲府市（こうふし）
+長野県,長野市（ながのし）
+岐阜県,岐阜市（ぎふし）
+静岡県,静岡市（しずおかし）
+愛知県,名古屋市（なごやし）
+三重県,津市（つし）
+滋賀県,大津市（おおつし）
+京都府,京都市（きょうとし）
+大阪府,大阪市（おおさかし）
+兵庫県,神戸市（こうべし）
+奈良県,奈良市（ならし）
+和歌山県,和歌山市（わかやまし）
+鳥取県,鳥取市（とっとりし）
+島根県,松江市（まつえし）
+岡山県,岡山市（おかやまし）
+広島県,広島市（ひろしまし）
+山口県,山口市（やまぐちし）
+徳島県,徳島市（とくしまし）
+香川県,高松市（たかまつし）
+愛媛県,松山市（まつやまし）
+高知県,高知市（こうちし）
+福岡県,福岡市（ふくおかし）
+佐賀県,佐賀市（さがし）
+長崎県,長崎市（ながさきし）
+熊本県,熊本市（くまもとし）
+大分県,大分市（おおいたし）
+宮崎県,宮崎市（みやざきし）
+鹿児島県,鹿児島市（かごしまし）
+沖縄県,那覇市（なはし）`,
+      months: `1月,January
+2月,February
+3月,March
+4月,April
+5月,May
+6月,June
+7月,July
+8月,August
+9月,September
+10月,October
+11月,November
+12月,December`,
+      weekdays: `日曜日,Sunday
+月曜日,Monday
+火曜日,Tuesday
+水曜日,Wednesday
+木曜日,Thursday
+金曜日,Friday
+土曜日,Saturday`,
+      stations: `札幌駅（さっぽろえき）,北海道
+函館駅（はこだてえき）,北海道
+新函館北斗駅（しんはこだてほくとえき）,北海道
+青森駅（あおもりえき）,青森県
+新青森駅（しんあおもりえき）,青森県
+盛岡駅（もりおかえき）,岩手県
+仙台駅（せんだいえき）,宮城県
+秋田駅（あきたえき）,秋田県
+山形駅（やまがたえき）,山形県
+福島駅（ふくしまえき）,福島県
+郡山駅（こおりやまえき）,福島県
+水戸駅（みとえき）,茨城県
+宇都宮駅（うつのみやえき）,栃木県
+高崎駅（たかさきえき）,群馬県
+大宮駅（おおみやえき）,埼玉県
+浦和駅（うらわえき）,埼玉県
+千葉駅（ちばえき）,千葉県
+舞浜駅（まいはまえき）,千葉県
+東京駅（とうきょうえき）,東京都
+上野駅（うえのえき）,東京都
+新宿駅（しんじゅくえき）,東京都
+渋谷駅（しぶやえき）,東京都
+池袋駅（いけぶくろえき）,東京都
+品川駅（しながわえき）,東京都
+横浜駅（よこはまえき）,神奈川県
+川崎駅（かわさきえき）,神奈川県
+新横浜駅（しんよこはまえき）,神奈川県
+小田原駅（おだわらえき）,神奈川県
+新潟駅（にいがたえき）,新潟県
+長岡駅（ながおかえき）,新潟県
+富山駅（とやまえき）,富山県
+金沢駅（かなざわえき）,石川県
+福井駅（ふくいえき）,福井県
+甲府駅（こうふえき）,山梨県
+長野駅（ながのえき）,長野県
+松本駅（まつもとえき）,長野県
+岐阜駅（ぎふえき）,岐阜県
+静岡駅（しずおかえき）,静岡県
+浜松駅（はままつえき）,静岡県
+熱海駅（あたみえき）,静岡県
+三島駅（みしまえき）,静岡県
+名古屋駅（なごやえき）,愛知県
+豊橋駅（とよはしえき）,愛知県
+津駅（つえき）,三重県
+大津駅（おおつえき）,滋賀県
+京都駅（きょうとえき）,京都府
+大阪駅（おおさかえき）,大阪府
+新大阪駅（しんおおさかえき）,大阪府
+天王寺駅（てんのうじえき）,大阪府
+神戸駅（こうべえき）,兵庫県
+三ノ宮駅（さんのみやえき）,兵庫県
+姫路駅（ひめじえき）,兵庫県
+奈良駅（ならえき）,奈良県
+和歌山駅（わかやまえき）,和歌山県
+鳥取駅（とっとりえき）,鳥取県
+松江駅（まつええき）,島根県
+岡山駅（おかやまえき）,岡山県
+広島駅（ひろしまえき）,広島県
+新山口駅（しんやまぐちえき）,山口県
+下関駅（しものせきえき）,山口県
+徳島駅（とくしまえき）,徳島県
+高松駅（たかまつえき）,香川県
+松山駅（まつやまえき）,愛媛県
+高知駅（こうちえき）,高知県
+博多駅（はかたえき）,福岡県
+小倉駅（こくらえき）,福岡県
+佐賀駅（さがえき）,佐賀県
+長崎駅（ながさきえき）,長崎県
+熊本駅（くまもとえき）,熊本県
+大分駅（おおいたえき）,大分県
+宮崎駅（みやざきえき）,宮崎県
+鹿児島中央駅（かごしまちゅうおうえき）,鹿児島県
+那覇空港駅（なはくうこうえき）,沖縄県
+県庁前駅（けんちょうまええき）,沖縄県`,
+      chemistry: `水素,H2
+酸素,O2
+窒素,N2
+塩素,Cl2
+水,H2O
+二酸化炭素,CO2
+一酸化炭素,CO
+アンモニア,NH3
+塩化水素,HCl
+塩化ナトリウム,NaCl
+酸化銅,CuO
+酸化マグネシウム,MgO
+酸化銀,Ag2O
+酸化鉄,Fe2O3
+硫化鉄,FeS
+硫化水素,H2S
+炭酸水素ナトリウム,NaHCO3
+炭酸ナトリウム,Na2CO3
+水酸化ナトリウム,NaOH
+水酸化バリウム,Ba(OH)2
+硫酸,H2SO4
+硝酸,HNO3
+炭酸カルシウム,CaCO3
+エタノール,C2H5OH
+メタン,CH4`,
+      japaneseMonths: `1月,睦月（むつき）
+2月,如月（きさらぎ）
+3月,弥生（やよい）
+4月,卯月（うづき）
+5月,皐月（さつき）
+6月,水無月（みなづき）
+7月,文月（ふみづき）
+8月,葉月（はづき）
+9月,長月（ながつき）
+10月,神無月（かんなづき）
+11月,霜月（しもつき）
+12月,師走（しわす）`,
+      musicSymbols: `ト音記号,高い音域を表す記号
+ヘ音記号,低い音域を表す記号
+四分音符,1拍の長さの音符
+二分音符,2拍の長さの音符
+全音符,4拍の長さの音符
+八分音符,半拍の長さの音符
+四分休符,1拍休む記号
+二分休符,2拍休む記号
+全休符,4拍休む記号
+八分休符,半拍休む記号
+シャープ,半音高くする記号
+フラット,半音低くする記号
+ナチュラル,変化した音を元に戻す記号
+フォルテ,強く演奏する
+ピアノ,弱く演奏する
+メゾフォルテ,やや強く演奏する
+メゾピアノ,やや弱く演奏する
+クレッシェンド,だんだん強く
+デクレッシェンド,だんだん弱く
+リピート記号,くり返して演奏する
+フェルマータ,音をほどよくのばす
+スタッカート,音を短く切る`,
+      kobunWords: `あはれなり,しみじみと趣深い
+をかし,趣がある・おもしろい
+いと,たいへん・とても
+あまた,たくさん
+おどろく,目を覚ます・気づく
+ののしる,大声で騒ぐ
+ありがたし,めったにない
+うつくし,かわいらしい
+めでたし,すばらしい
+やむごとなし,身分が高い・大切だ
+あやし,不思議だ・身分が低い
+いみじ,たいそう・すばらしい・ひどい
+かなし,かわいい・いとしい
+つれづれなり,することがなく退屈だ
+いかで,どうして・なんとかして
+なほ,やはり
+さうざうし,もの足りない
+こころもとなし,待ち遠しい・不安だ
+わろし,よくない
+あし,悪い`,
+      yojijukugo: `一期一会,一生に一度の出会い
+一石二鳥,一つのことで二つの利益を得る
+温故知新,昔のことを学び新しい知識を得る
+起承転結,文章や物事の組み立て
+喜怒哀楽,人間のさまざまな感情
+試行錯誤,失敗しながら工夫を重ねる
+自業自得,自分の行いの結果を自分が受ける
+十人十色,人それぞれ考えや好みが違う
+大器晩成,大人物は時間をかけて成長する
+単刀直入,遠回しにせずすぐ本題に入る
+適材適所,能力に合った役割につける
+日進月歩,日に日に進歩する
+半信半疑,半分信じ半分疑う
+不言実行,黙って実行する
+無我夢中,何かに熱中して我を忘れる
+油断大敵,油断は失敗のもと
+臨機応変,状況に合わせて対応する
+一生懸命,力いっぱい取り組む
+四苦八苦,たいへん苦労する
+有言実行,言ったことを実行する`,
+      idioms: `足が出る,予算を超える
+足を洗う,悪いことをやめる
+頭が下がる,感心して尊敬する
+頭を抱える,困って悩む
+息が合う,調子がぴったり合う
+腕を上げる,技術が上達する
+顔が広い,知り合いが多い
+肩を落とす,がっかりする
+口が重い,あまり話さない
+口をはさむ,人の話に割り込む
+首を長くする,楽しみに待つ
+腰が低い,態度が丁寧だ
+舌を巻く,たいへん感心する
+手が空く,仕事が一段落して暇になる
+手を焼く,扱いに困る
+鼻が高い,得意に思う
+腹が立つ,怒る
+骨が折れる,苦労する
+目がない,とても好きだ
+目を丸くする,驚く`,
+      proverbs: `石の上にも三年,がまん強く続ければ成果が出る
+急がば回れ,急ぐ時ほど安全な方法がよい
+犬も歩けば棒に当たる,行動すると良いことも悪いことも起こる
+馬の耳に念仏,言い聞かせても効果がない
+縁の下の力持ち,人目につかず支える人
+鬼に金棒,強いものがさらに強くなる
+河童の川流れ,名人でも失敗することがある
+猿も木から落ちる,得意な人でも失敗することがある
+知らぬが仏,知らない方が幸せなこともある
+好きこそ物の上手なれ,好きなことは上達しやすい
+千里の道も一歩から,大きなことも小さな一歩から始まる
+宝の持ち腐れ,よいものを活用できていない
+棚からぼたもち,思いがけない幸運がある
+ちりも積もれば山となる,小さなものも積み重なると大きくなる
+月とすっぽん,二つの差がとても大きい
+出る杭は打たれる,目立つ人は批判されやすい
+時は金なり,時間は大切だ
+二兎を追う者は一兎をも得ず,欲張るとどちらも失う
+能ある鷹は爪を隠す,実力のある人はむやみに見せびらかさない
+百聞は一見にしかず,何度聞くより一度見る方がよくわかる`,
+      history: `57年,倭の奴国王が後漢に使いを送る
+239年,卑弥呼が魏に使いを送る
+593年,聖徳太子が推古天皇の摂政になる
+607年,小野妹子を隋に送る
+645年,大化の改新が始まる
+701年,大宝律令ができる
+710年,平城京に都を移す
+743年,墾田永年私財法が出される
+794年,平安京に都を移す
+894年,遣唐使が停止される
+1016年,藤原道長が摂政になる
+1086年,白河上皇が院政を始める
+1185年,壇ノ浦の戦いで平氏が滅びる
+1192年,源頼朝が征夷大将軍になる
+1221年,承久の乱が起こる
+1232年,御成敗式目が制定される
+1274年,文永の役が起こる
+1281年,弘安の役が起こる
+1333年,鎌倉幕府が滅びる
+1338年,足利尊氏が征夷大将軍になる
+1392年,南北朝が統一される
+1467年,応仁の乱が始まる
+1543年,鉄砲が伝わる
+1549年,キリスト教が伝わる
+1575年,長篠の戦いが起こる
+1582年,本能寺の変が起こる
+1590年,豊臣秀吉が全国統一する
+1600年,関ヶ原の戦いが起こる
+1603年,江戸幕府が開かれる
+1639年,ポルトガル船の来航が禁止される
+1685年,生類憐みの令が出される
+1716年,享保の改革が始まる
+1787年,寛政の改革が始まる
+1837年,大塩平八郎の乱が起こる
+1841年,天保の改革が始まる
+1853年,ペリーが浦賀に来航する
+1854年,日米和親条約が結ばれる
+1858年,日米修好通商条約が結ばれる
+1867年,大政奉還が行われる
+1868年,明治維新が始まる
+1871年,廃藩置県が行われる
+1872年,学制が公布される
+1873年,地租改正が始まる
+1889年,大日本帝国憲法が発布される
+1894年,日清戦争が始まる
+1904年,日露戦争が始まる
+1910年,韓国併合が行われる
+1914年,第一次世界大戦が始まる
+1918年,米騒動が起こる
+1925年,普通選挙法が成立する
+1931年,満州事変が起こる
+1937年,日中戦争が始まる
+1941年,太平洋戦争が始まる
+1945年,第二次世界大戦が終わる
+1946年,日本国憲法が公布される
+1951年,サンフランシスコ平和条約が結ばれる
+1956年,日本が国際連合に加盟する
+1964年,東京オリンピックが開かれる
+1972年,沖縄が日本に復帰する`
+    };
+
+    const storageKey = "flashcard-maker-decks-v1";
+    const els = {
+      app: document.getElementById("app"),
+      sourceText: document.getElementById("sourceText"),
+      parseMessage: document.getElementById("parseMessage"),
+      frontWord: document.getElementById("frontWord"),
+      backWord: document.getElementById("backWord"),
+      card: document.getElementById("card"),
+      cardWrap: document.querySelector(".card-wrap"),
+      flipBtn: document.getElementById("flipBtn"),
+      floatFrontOnlyBtn: document.getElementById("floatFrontOnlyBtn"),
+      floatBackOnlyBtn: document.getElementById("floatBackOnlyBtn"),
+      frontFace: document.getElementById("frontFace"),
+      backFace: document.getElementById("backFace"),
+      divider: document.getElementById("divider"),
+      deckInfo: document.getElementById("deckInfo"),
+      progress: document.getElementById("progress"),
+      deckName: document.getElementById("deckName"),
+      savedDecks: document.getElementById("savedDecks"),
+      frontSeconds: document.getElementById("frontSeconds"),
+      backSeconds: document.getElementById("backSeconds"),
+      fsFrontSeconds: document.getElementById("fsFrontSeconds"),
+      fsBackSeconds: document.getElementById("fsBackSeconds")
+    };
+
+    let cards = [];
+    let index = 0;
+    let displayMode = "both";
+    let playMode = "manual";
+    let studyDirection = "frontToBack";
+    let autoTimer = null;
+    let autoPhase = "front";
+    let audioContext = null;
+
+    function readyAudio() {
+      try {
+        audioContext = audioContext || new (window.AudioContext || window.webkitAudioContext)();
+        if (audioContext.state === "suspended") audioContext.resume();
+      } catch {
+      }
+    }
+
+    function playTone(kind = "move") {
+      try {
+        readyAudio();
+        if (!audioContext) return;
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        const now = audioContext.currentTime;
+        oscillator.type = "sine";
+        oscillator.frequency.setValueAtTime(kind === "flip" ? 620 : 440, now);
+        oscillator.frequency.exponentialRampToValueAtTime(kind === "flip" ? 820 : 520, now + 0.07);
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(0.045, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.11);
+        oscillator.connect(gain).connect(audioContext.destination);
+        oscillator.start(now);
+        oscillator.stop(now + 0.12);
+      } catch {
+      }
+    }
+
+    function fillSeconds() {
+      for (let i = 1; i <= 5; i += 1) {
+        els.frontSeconds.add(new Option(i, i));
+        els.backSeconds.add(new Option(i, i));
+        els.fsFrontSeconds.add(new Option(i, i));
+        els.fsBackSeconds.add(new Option(i, i));
+      }
+      els.frontSeconds.value = "2";
+      els.backSeconds.value = "2";
+      els.fsFrontSeconds.value = "2";
+      els.fsBackSeconds.value = "2";
+    }
+
+    function parseCards(text) {
+      return text.split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(Boolean)
+        .map(line => {
+          const parts = line.includes("\t") ? line.split("\t") : line.split(",");
+          const front = (parts[0] || "").trim();
+          const back = parts.slice(1).join(parts.length > 2 ? "," : "").trim();
+          return front && back ? { front, back } : null;
+        })
+        .filter(Boolean);
+    }
+
+    function makeCards() {
+      cards = parseCards(els.sourceText.value);
+      index = 0;
+      autoPhase = firstPhase();
+      stopAuto();
+      render();
+      els.parseMessage.textContent = cards.length ? `${cards.length}枚のカードを作成しました。` : "読み取れるカードがありません。";
+      if (playMode === "auto" && cards.length) startAuto();
+    }
+
+    function currentCard() {
+      return cards[index] || { front: "カードを作成してください", back: "左の見本から始められます" };
+    }
+
+    function render() {
+      const card = currentCard();
+      els.frontWord.textContent = card.front;
+      els.backWord.textContent = card.back;
+      els.deckInfo.textContent = `${cards.length}枚`;
+      els.progress.textContent = cards.length ? `${index + 1} / ${cards.length}` : "0 / 0";
+
+      const phaseBoth = displayMode === "both";
+      const showFront = displayMode === "front" || (phaseBoth && autoPhase === "front");
+      const showBack = displayMode === "back" || (phaseBoth && autoPhase === "back");
+      els.frontFace.style.display = showFront ? "grid" : "none";
+      els.backFace.style.display = showBack ? "grid" : "none";
+      els.divider.style.display = showFront && showBack ? "block" : "none";
+      els.card.classList.toggle("double", showFront && showBack);
+      els.flipBtn.textContent = studyDirection === "frontToBack" ? "表→裏" : "裏→表";
+      els.flipBtn.classList.toggle("active", displayMode === "both");
+      els.floatFrontOnlyBtn.classList.toggle("active", displayMode === "front");
+      els.floatBackOnlyBtn.classList.toggle("active", displayMode === "back");
+    }
+
+    function firstPhase() {
+      if (displayMode === "back") return "back";
+      if (displayMode === "front") return "front";
+      return studyDirection === "backToFront" ? "back" : "front";
+    }
+
+    function answerPhase() {
+      return firstPhase() === "front" ? "back" : "front";
+    }
+
+    function setDisplayMode(mode) {
+      displayMode = mode;
+      autoPhase = firstPhase();
+      document.getElementById("frontOnlyBtn").classList.toggle("active", mode === "front");
+      document.getElementById("backOnlyBtn").classList.toggle("active", mode === "back");
+      document.getElementById("bothBtn").classList.toggle("active", mode === "both");
+      render();
+      if (playMode === "auto") restartAuto();
+    }
+
+    function setPlayMode(mode) {
+      playMode = mode;
+      readyAudio();
+      document.getElementById("autoBtn").classList.toggle("active", mode === "auto");
+      document.getElementById("manualBtn").classList.toggle("active", mode === "manual");
+      document.getElementById("fsAutoBtn").classList.toggle("active", mode === "auto");
+      document.getElementById("fsManualBtn").classList.toggle("active", mode === "manual");
+      if (mode === "auto") startAuto();
+      else stopAuto();
+    }
+
+    function nextCard() {
+      if (!cards.length) return;
+      index = (index + 1) % cards.length;
+      autoPhase = firstPhase();
+      playTone("move");
+      render();
+    }
+
+    function prevCard() {
+      if (!cards.length) return;
+      index = (index - 1 + cards.length) % cards.length;
+      autoPhase = firstPhase();
+      playTone("move");
+      render();
+    }
+
+    function stopAuto() {
+      clearTimeout(autoTimer);
+      autoTimer = null;
+    }
+
+    function startAuto() {
+      stopAuto();
+      if (!cards.length) return;
+      autoPhase = firstPhase();
+      tickAuto();
+    }
+
+    function restartAuto() {
+      if (playMode === "auto") startAuto();
+    }
+
+    function tickAuto() {
+      render();
+      const delaySeconds = displayMode === "back" || autoPhase === "back" ? els.backSeconds.value : els.frontSeconds.value;
+      const delay = Number(delaySeconds) * 1000;
+      autoTimer = setTimeout(() => {
+        if (displayMode === "front") {
+          nextCard();
+        } else if (displayMode === "back") {
+          nextCard();
+        } else if (autoPhase === firstPhase()) {
+          autoPhase = answerPhase();
+          playTone("flip");
+          render();
+        } else {
+          nextCard();
+        }
+        tickAuto();
+      }, delay);
+    }
+
+    function startFromFullscreen() {
+      index = 0;
+      autoPhase = firstPhase();
+      render();
+      setPlayMode("auto");
+    }
+
+    function advanceManualCard() {
+      if (!cards.length) return;
+      if (displayMode === "both" && autoPhase === firstPhase()) {
+        autoPhase = answerPhase();
+        playTone("flip");
+        render();
+        return;
+      }
+      nextCard();
+    }
+
+    function syncSeconds(source, target) {
+      target.value = source.value;
+      restartAuto();
+    }
+
+    function shuffleCards() {
+      for (let i = cards.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [cards[i], cards[j]] = [cards[j], cards[i]];
+      }
+      index = 0;
+      render();
+      restartAuto();
+    }
+
+    function loadDecks() {
+      try { return JSON.parse(localStorage.getItem(storageKey) || "{}"); }
+      catch { return {}; }
+    }
+
+    function saveDecks(decks) {
+      localStorage.setItem(storageKey, JSON.stringify(decks));
+      refreshDeckList();
+    }
+
+    function refreshDeckList() {
+      const decks = loadDecks();
+      els.savedDecks.innerHTML = "";
+      Object.keys(decks).sort().forEach(name => els.savedDecks.add(new Option(name, name)));
+      if (!els.savedDecks.options.length) els.savedDecks.add(new Option("保存なし", ""));
+    }
+
+    function saveCurrentDeck() {
+      const name = els.deckName.value.trim();
+      if (!name) {
+        els.parseMessage.textContent = "保存名を入力してください。";
+        return;
+      }
+      const decks = loadDecks();
+      decks[name] = els.sourceText.value;
+      saveDecks(decks);
+      els.savedDecks.value = name;
+      els.parseMessage.textContent = `「${name}」を保存しました。`;
+    }
+
+    function loadSavedDeck() {
+      const name = els.savedDecks.value;
+      const decks = loadDecks();
+      if (!name || !decks[name]) return;
+      els.deckName.value = name;
+      els.sourceText.value = decks[name];
+      makeCards();
+    }
+
+    function deleteSavedDeck() {
+      const name = els.savedDecks.value;
+      if (!name) return;
+      const decks = loadDecks();
+      delete decks[name];
+      saveDecks(decks);
+      els.parseMessage.textContent = `「${name}」を削除しました。`;
+    }
+
+    document.querySelectorAll("[data-sample]").forEach(button => {
+      button.addEventListener("click", () => {
+        els.sourceText.value = samples[button.dataset.sample];
+        els.deckName.value = button.textContent;
+        makeCards();
+      });
+    });
+
+    document.getElementById("makeBtn").addEventListener("click", makeCards);
+    document.getElementById("clearBtn").addEventListener("click", () => {
+      els.sourceText.value = "";
+      cards = [];
+      index = 0;
+      stopAuto();
+      render();
+      els.parseMessage.textContent = "";
+    });
+    document.getElementById("shuffleBtn").addEventListener("click", shuffleCards);
+    document.getElementById("fsShuffleBtn").addEventListener("click", shuffleCards);
+    document.getElementById("frontOnlyBtn").addEventListener("click", () => setDisplayMode("front"));
+    document.getElementById("backOnlyBtn").addEventListener("click", () => setDisplayMode("back"));
+    document.getElementById("bothBtn").addEventListener("click", () => setDisplayMode("both"));
+    document.getElementById("floatFrontOnlyBtn").addEventListener("click", () => setDisplayMode("front"));
+    document.getElementById("floatBackOnlyBtn").addEventListener("click", () => setDisplayMode("back"));
+    document.getElementById("autoBtn").addEventListener("click", () => setPlayMode("auto"));
+    document.getElementById("manualBtn").addEventListener("click", () => setPlayMode("manual"));
+    document.getElementById("fsStartBtn").addEventListener("click", startFromFullscreen);
+    document.getElementById("fsAutoBtn").addEventListener("click", () => setPlayMode("auto"));
+    document.getElementById("fsManualBtn").addEventListener("click", () => setPlayMode("manual"));
+    document.getElementById("nextBtn").addEventListener("click", () => { nextCard(); restartAuto(); });
+    document.getElementById("prevBtn").addEventListener("click", () => { prevCard(); restartAuto(); });
+    document.getElementById("restartBtn").addEventListener("click", () => { index = 0; autoPhase = firstPhase(); render(); restartAuto(); });
+    document.getElementById("flipBtn").addEventListener("click", () => {
+      studyDirection = studyDirection === "frontToBack" ? "backToFront" : "frontToBack";
+      displayMode = "both";
+      autoPhase = firstPhase();
+      document.getElementById("frontOnlyBtn").classList.remove("active");
+      document.getElementById("backOnlyBtn").classList.remove("active");
+      document.getElementById("bothBtn").classList.add("active");
+      render();
+      restartAuto();
+      playTone("flip");
+    });
+    els.cardWrap.addEventListener("click", event => {
+      if (playMode !== "manual") return;
+      if (event.target.closest("button,select,input,textarea")) return;
+      advanceManualCard();
+    });
+    document.getElementById("fullscreenBtn").addEventListener("click", () => els.app.classList.toggle("fullscreen"));
+    document.getElementById("saveBtn").addEventListener("click", saveCurrentDeck);
+    document.getElementById("loadBtn").addEventListener("click", loadSavedDeck);
+    document.getElementById("deleteBtn").addEventListener("click", deleteSavedDeck);
+    els.frontSeconds.addEventListener("change", () => syncSeconds(els.frontSeconds, els.fsFrontSeconds));
+    els.backSeconds.addEventListener("change", () => syncSeconds(els.backSeconds, els.fsBackSeconds));
+    els.fsFrontSeconds.addEventListener("change", () => syncSeconds(els.fsFrontSeconds, els.frontSeconds));
+    els.fsBackSeconds.addEventListener("change", () => syncSeconds(els.fsBackSeconds, els.backSeconds));
+    window.addEventListener("keydown", event => {
+      if (event.target.matches("textarea,input,select")) return;
+      if (event.key === "ArrowRight") { nextCard(); restartAuto(); }
+      if (event.key === "ArrowLeft") { prevCard(); restartAuto(); }
+      if (event.key === " ") { event.preventDefault(); playMode === "manual" ? advanceManualCard() : restartAuto(); }
+      if (event.key === "Escape") els.app.classList.remove("fullscreen");
+    });
+
+    fillSeconds();
+    refreshDeckList();
+    els.sourceText.value = samples.prefectures;
+    els.deckName.value = "県名と県庁所在地";
+    makeCards();
+  </script>
+</body>
+</html>
