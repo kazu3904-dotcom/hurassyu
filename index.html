@@ -518,6 +518,7 @@
             <button id="fsShuffleBtn">シャッフル</button>
             <button id="fsAutoBtn">自動</button>
             <button id="fsManualBtn" class="active">手動</button>
+            <button id="fsMenuBtn">メニューへ</button>
             <label>表<select id="fsFrontSeconds"></select>秒</label>
             <label>裏<select id="fsBackSeconds"></select>秒</label>
           </div>
@@ -1214,6 +1215,7 @@
     document.getElementById("fsStartBtn").addEventListener("click", startFromFullscreen);
     document.getElementById("fsAutoBtn").addEventListener("click", () => setPlayMode("auto"));
     document.getElementById("fsManualBtn").addEventListener("click", () => setPlayMode("manual"));
+    document.getElementById("fsMenuBtn").addEventListener("click", () => els.app.classList.remove("fullscreen"));
     document.getElementById("nextBtn").addEventListener("click", () => { nextCard(); restartAuto(); });
     document.getElementById("prevBtn").addEventListener("click", () => { prevCard(); restartAuto(); });
     document.getElementById("restartBtn").addEventListener("click", () => { index = 0; autoPhase = firstPhase(); render(); restartAuto(); });
