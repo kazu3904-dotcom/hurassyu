@@ -485,6 +485,10 @@
             <select id="savedDecks" aria-label="保存したカード"></select>
             <button id="loadBtn">読込</button>
             <button id="deleteBtn" class="warning">削除</button>
+            <button id="exportBtn">配布ファイル作成</button>
+            <button id="exportHtmlBtn">そのまま配布HTML作成</button>
+            <button id="importBtn">配布ファイル読込</button>
+            <input id="importFile" type="file" accept=".json,.flashcards.json,application/json" hidden>
           </div>
         </section>
 
@@ -919,6 +923,7 @@
       progress: document.getElementById("progress"),
       deckName: document.getElementById("deckName"),
       savedDecks: document.getElementById("savedDecks"),
+      importFile: document.getElementById("importFile"),
       frontSeconds: document.getElementById("frontSeconds"),
       backSeconds: document.getElementById("backSeconds"),
       fsFrontSeconds: document.getElementById("fsFrontSeconds"),
@@ -1186,6 +1191,114 @@
       els.parseMessage.textContent = `「${name}」を削除しました。`;
     }
 
+    function safeFileName(name) {
+      return (name || "flashcards")
+        .trim()
+        .replace(/[\\/:*?"<>|]/g, "_")
+        .replace(/\s+/g, "_")
+        .slice(0, 60) || "flashcards";
+    }
+
+    function exportDeckFile() {
+      const name = els.deckName.value.trim() || "フラッシュカード";
+      const text = els.sourceText.value.trim();
+      const parsed = parseCards(text);
+      if (!parsed.length) {
+        els.parseMessage.textContent = "配布できるカードがありません。";
+        return;
+      }
+      const payload = {
+        app: "flashcard-maker",
+        version: 1,
+        name,
+        text,
+        exportedAt: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${safeFileName(name)}.flashcards.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      els.parseMessage.textContent = `「${name}」の配布ファイルを作成しました。`;
+    }
+
+    function exportStandaloneHtml() {
+      const name = els.deckName.value.trim() || "フラッシュカード";
+      const text = els.sourceText.value.trim();
+      const parsed = parseCards(text);
+      if (!parsed.length) {
+        els.parseMessage.textContent = "配布できるカードがありません。";
+        return;
+      }
+      const payload = JSON.stringify({ name, text });
+      const loader = `<script>
+(() => {
+  const sharedDeck = ${payload};
+  function loadSharedDeck() {
+    const nameInput = document.getElementById("deckName");
+    const source = document.getElementById("sourceText");
+    const make = document.getElementById("makeBtn");
+    const message = document.getElementById("parseMessage");
+    if (!nameInput || !source || !make) return;
+    nameInput.value = sharedDeck.name;
+    source.value = sharedDeck.text;
+    make.click();
+    if (message) message.textContent = "配布されたカードを読み込みました。";
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", loadSharedDeck);
+  } else {
+    loadSharedDeck();
+  }
+})();
+<\/script>`;
+      const html = "<!doctype html>\n" + document.documentElement.outerHTML.replace("</body>", `${loader}\n</body>`);
+      const blob = new Blob([html], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${safeFileName(name)}.html`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      els.parseMessage.textContent = `「${name}」を開くだけで使えるHTMLにしました。`;
+    }
+
+    function importDeckFile(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.addEventListener("load", () => {
+        const raw = String(reader.result || "");
+        let name = file.name.replace(/\.flashcards\.json$|\.json$/i, "");
+        let text = raw;
+        try {
+          const data = JSON.parse(raw);
+          if (data && typeof data === "object" && typeof data.text === "string") {
+            name = typeof data.name === "string" && data.name.trim() ? data.name.trim() : name;
+            text = data.text;
+          }
+        } catch {
+        }
+        try {
+          if (!parseCards(text).length) throw new Error("no cards");
+          els.deckName.value = name;
+          els.sourceText.value = text;
+          makeCards();
+          els.parseMessage.textContent = `「${name}」を読み込みました。保存ボタンでこの端末に保存できます。`;
+        } catch {
+          els.parseMessage.textContent = "配布ファイルを読み込めませんでした。";
+        } finally {
+          els.importFile.value = "";
+        }
+      });
+      reader.readAsText(file);
+    }
+
     document.querySelectorAll("[data-sample]").forEach(button => {
       button.addEventListener("click", () => {
         els.sourceText.value = samples[button.dataset.sample];
@@ -1239,6 +1352,10 @@
     document.getElementById("saveBtn").addEventListener("click", saveCurrentDeck);
     document.getElementById("loadBtn").addEventListener("click", loadSavedDeck);
     document.getElementById("deleteBtn").addEventListener("click", deleteSavedDeck);
+    document.getElementById("exportBtn").addEventListener("click", exportDeckFile);
+    document.getElementById("exportHtmlBtn").addEventListener("click", exportStandaloneHtml);
+    document.getElementById("importBtn").addEventListener("click", () => els.importFile.click());
+    els.importFile.addEventListener("change", () => importDeckFile(els.importFile.files[0]));
     els.frontSeconds.addEventListener("change", () => syncSeconds(els.frontSeconds, els.fsFrontSeconds));
     els.backSeconds.addEventListener("change", () => syncSeconds(els.backSeconds, els.fsBackSeconds));
     els.fsFrontSeconds.addEventListener("change", () => syncSeconds(els.fsFrontSeconds, els.frontSeconds));
