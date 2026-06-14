@@ -1234,8 +1234,10 @@
         els.parseMessage.textContent = "配布できるカードがありません。";
         return;
       }
-      const payload = JSON.stringify({ name, text });
-      const loader = `<script>
+      const payload = JSON.stringify({ name, text }).replace(/</g, "\\u003c");
+      const scriptOpen = "<" + "script>";
+      const scriptClose = "<" + "/script>";
+      const loader = `${scriptOpen}
 (() => {
   const sharedDeck = ${payload};
   function loadSharedDeck() {
@@ -1255,7 +1257,7 @@
     loadSharedDeck();
   }
 })();
-<\/script>`;
+${scriptClose}`;
       const html = "<!doctype html>\n" + document.documentElement.outerHTML.replace("</body>", `${loader}\n</body>`);
       const blob = new Blob([html], { type: "text/html" });
       const url = URL.createObjectURL(blob);
