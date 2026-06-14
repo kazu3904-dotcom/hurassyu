@@ -704,31 +704,31 @@
 鹿児島中央駅（かごしまちゅうおうえき）,鹿児島県
 那覇空港駅（なはくうこうえき）,沖縄県
 県庁前駅（けんちょうまええき）,沖縄県`,
-      chemistry: `水素,H2
-酸素,O2
-窒素,N2
-塩素,Cl2
-水,H2O
-二酸化炭素,CO2
+      chemistry: `水素,H₂
+酸素,O₂
+窒素,N₂
+塩素,Cl₂
+水,H₂O
+二酸化炭素,CO₂
 一酸化炭素,CO
-アンモニア,NH3
+アンモニア,NH₃
 塩化水素,HCl
 塩化ナトリウム,NaCl
 酸化銅,CuO
 酸化マグネシウム,MgO
-酸化銀,Ag2O
-酸化鉄,Fe2O3
+酸化銀,Ag₂O
+酸化鉄,Fe₂O₃
 硫化鉄,FeS
-硫化水素,H2S
-炭酸水素ナトリウム,NaHCO3
-炭酸ナトリウム,Na2CO3
+硫化水素,H₂S
+炭酸水素ナトリウム,NaHCO₃
+炭酸ナトリウム,Na₂CO₃
 水酸化ナトリウム,NaOH
-水酸化バリウム,Ba(OH)2
-硫酸,H2SO4
-硝酸,HNO3
-炭酸カルシウム,CaCO3
-エタノール,C2H5OH
-メタン,CH4`,
+水酸化バリウム,Ba(OH)₂
+硫酸,H₂SO₄
+硝酸,HNO₃
+炭酸カルシウム,CaCO₃
+エタノール,C₂H₅OH
+メタン,CH₄`,
       japaneseMonths: `1月,睦月（むつき）
 2月,如月（きさらぎ）
 3月,弥生（やよい）
@@ -741,28 +741,29 @@
 10月,神無月（かんなづき）
 11月,霜月（しもつき）
 12月,師走（しわす）`,
-      musicSymbols: `ト音記号,高い音域を表す記号
-ヘ音記号,低い音域を表す記号
-四分音符,1拍の長さの音符
-二分音符,2拍の長さの音符
-全音符,4拍の長さの音符
-八分音符,半拍の長さの音符
-四分休符,1拍休む記号
-二分休符,2拍休む記号
-全休符,4拍休む記号
-八分休符,半拍休む記号
-シャープ,半音高くする記号
-フラット,半音低くする記号
-ナチュラル,変化した音を元に戻す記号
-フォルテ,強く演奏する
-ピアノ,弱く演奏する
-メゾフォルテ,やや強く演奏する
-メゾピアノ,やや弱く演奏する
-クレッシェンド,だんだん強く
-デクレッシェンド,だんだん弱く
-リピート記号,くり返して演奏する
-フェルマータ,音をほどよくのばす
-スタッカート,音を短く切る`,
+      musicSymbols: `𝄞,ト音記号。高い音域を表す
+𝄢,ヘ音記号。低い音域を表す
+𝅝,全音符。4拍の長さ
+𝅗𝅥,二分音符。2拍の長さ
+♩,四分音符。1拍の長さ
+♪,八分音符。半拍の長さ
+♫,八分音符が2つ続く形
+𝄻,全休符。4拍休む
+𝄼,二分休符。2拍休む
+𝄽,四分休符。1拍休む
+𝄾,八分休符。半拍休む
+♯,シャープ。半音高くする
+♭,フラット。半音低くする
+♮,ナチュラル。変化した音を元に戻す
+f,フォルテ。強く演奏する
+p,ピアノ。弱く演奏する
+mf,メゾフォルテ。やや強く演奏する
+mp,メゾピアノ。やや弱く演奏する
+＜,クレッシェンド。だんだん強く
+＞,デクレッシェンド。だんだん弱く
+𝄆 𝄇,リピート記号。くり返して演奏する
+𝄐,フェルマータ。音をほどよくのばす
+・,スタッカート。音を短く切る`,
       kobunWords: `あはれなり,しみじみと趣深い
 をかし,趣がある・おもしろい
 いと,たいへん・とても
@@ -1234,31 +1235,130 @@
         els.parseMessage.textContent = "配布できるカードがありません。";
         return;
       }
-      const payload = JSON.stringify({ name, text }).replace(/</g, "\\u003c");
       const scriptOpen = "<" + "script>";
       const scriptClose = "<" + "/script>";
-      const loader = `${scriptOpen}
-(() => {
-  const sharedDeck = ${payload};
-  function loadSharedDeck() {
-    const nameInput = document.getElementById("deckName");
-    const source = document.getElementById("sourceText");
-    const make = document.getElementById("makeBtn");
-    const message = document.getElementById("parseMessage");
-    if (!nameInput || !source || !make) return;
-    nameInput.value = sharedDeck.name;
-    source.value = sharedDeck.text;
-    make.click();
-    if (message) message.textContent = "配布されたカードを読み込みました。";
-  }
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", loadSharedDeck);
+      const payload = JSON.stringify({ name, cards: parsed }).replace(/</g, "\\u003c");
+      const playerScript = `
+const deck = ${payload};
+let index = 0;
+let phase = "front";
+let direction = "frontToBack";
+let mode = "manual";
+let timer = null;
+const frontSeconds = document.getElementById("frontSeconds");
+const backSeconds = document.getElementById("backSeconds");
+const word = document.getElementById("word");
+const card = document.getElementById("card");
+const progress = document.getElementById("progress");
+const directionBtn = document.getElementById("directionBtn");
+const autoBtn = document.getElementById("autoBtn");
+const manualBtn = document.getElementById("manualBtn");
+document.getElementById("title").textContent = deck.name;
+function firstPhase(){ return direction === "backToFront" ? "back" : "front"; }
+function answerPhase(){ return firstPhase() === "front" ? "back" : "front"; }
+function tone(){
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.frequency.value = 560;
+    gain.gain.value = 0.035;
+    osc.connect(gain).connect(ctx.destination);
+    osc.start();
+    setTimeout(() => { osc.stop(); ctx.close(); }, 90);
+  } catch {}
+}
+function render(){
+  const current = deck.cards[index] || { front: "", back: "" };
+  word.textContent = phase === "front" ? current.front : current.back;
+  card.className = "card " + phase;
+  progress.textContent = (index + 1) + " / " + deck.cards.length;
+  directionBtn.textContent = direction === "frontToBack" ? "表→裏" : "裏→表";
+  autoBtn.classList.toggle("active", mode === "auto");
+  manualBtn.classList.toggle("active", mode === "manual");
+}
+function next(){
+  index = (index + 1) % deck.cards.length;
+  phase = firstPhase();
+  tone();
+  render();
+}
+function step(){
+  if (phase === firstPhase()) {
+    phase = answerPhase();
+    tone();
+    render();
   } else {
-    loadSharedDeck();
+    next();
   }
-})();
-${scriptClose}`;
-      const html = "<!doctype html>\n" + document.documentElement.outerHTML.replace("</body>", `${loader}\n</body>`);
+}
+function stopAuto(){
+  clearTimeout(timer);
+  timer = null;
+}
+function tick(){
+  render();
+  const seconds = phase === "front" ? frontSeconds.value : backSeconds.value;
+  timer = setTimeout(() => {
+    step();
+    if (mode === "auto") tick();
+  }, Number(seconds) * 1000);
+}
+document.getElementById("startBtn").addEventListener("click", () => {
+  index = 0;
+  phase = firstPhase();
+  mode = "auto";
+  stopAuto();
+  tick();
+});
+document.getElementById("shuffleBtn").addEventListener("click", () => {
+  for (let i = deck.cards.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck.cards[i], deck.cards[j]] = [deck.cards[j], deck.cards[i]];
+  }
+  index = 0;
+  phase = firstPhase();
+  render();
+});
+directionBtn.addEventListener("click", () => {
+  direction = direction === "frontToBack" ? "backToFront" : "frontToBack";
+  phase = firstPhase();
+  render();
+});
+autoBtn.addEventListener("click", () => { mode = "auto"; stopAuto(); tick(); });
+manualBtn.addEventListener("click", () => { mode = "manual"; stopAuto(); render(); });
+card.addEventListener("click", () => { if (mode === "manual") step(); });
+document.getElementById("prevBtn").addEventListener("click", () => {
+  index = (index - 1 + deck.cards.length) % deck.cards.length;
+  phase = firstPhase();
+  render();
+});
+document.getElementById("nextBtn").addEventListener("click", next);
+window.addEventListener("keydown", event => {
+  if (event.key === "ArrowRight") next();
+  if (event.key === "ArrowLeft") document.getElementById("prevBtn").click();
+  if (event.key === " ") { event.preventDefault(); step(); }
+});
+render();`;
+      const html = `<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${name.replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]))}</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:#f7f4ee;color:#1f2933;font-family:"Yu Gothic UI","Meiryo",system-ui,sans-serif}.app{min-height:100vh;display:grid;grid-template-rows:auto 1fr auto}.bar{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;padding:10px;background:rgba(255,253,248,.72);border-bottom:1px solid #ddd6ca;backdrop-filter:blur(12px)}h1{margin:0 12px 0 0;font-size:17px}button,select{height:42px;border:1px solid #ddd6ca;border-radius:8px;background:rgba(255,255,255,.82);padding:0 14px;font:inherit;font-weight:700}button.active{background:#d9f3ef;border-color:#0f766e;color:#0b4f49}.card{display:grid;place-items:center;margin:0;min-height:calc(100vh - 148px);padding:28px;text-align:center;cursor:pointer}.card.front{background:#fff7c7}.card.back{background:#f3fbfa}.word{font-size:clamp(40px,9vw,96px);font-weight:800;line-height:1.15;overflow-wrap:anywhere}.nav{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;padding:10px;background:#fffdf8;border-top:1px solid #ddd6ca}.progress{align-self:center;font-weight:800;color:#667085}@media(max-width:640px){.bar{justify-content:flex-start}.bar button,.bar select{flex:1 1 calc(50% - 8px)}h1{width:100%;text-align:center}.nav{grid-template-columns:1fr}.progress{text-align:center}.card{min-height:calc(100vh - 250px)}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="bar"><h1 id="title">フラッシュカード</h1><button id="startBtn">スタート</button><button id="shuffleBtn">シャッフル</button><button id="directionBtn">表→裏</button><button id="autoBtn">自動</button><button id="manualBtn" class="active">手動</button><label>表 <select id="frontSeconds"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option></select> 秒</label><label>裏 <select id="backSeconds"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option></select> 秒</label></header>
+<main id="card" class="card front"><div id="word" class="word"></div></main>
+<nav class="nav"><button id="prevBtn">前へ</button><div id="progress" class="progress">0 / 0</div><button id="nextBtn">次へ</button></nav>
+</div>
+${scriptOpen}${playerScript}${scriptClose}
+</body>
+</html>`;
       const blob = new Blob([html], { type: "text/html" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
